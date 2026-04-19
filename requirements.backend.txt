@@ -1,3 +1,6 @@
+# Utils
+setuptools==69.5.1
+
 # Core ML
 scikit-learn
 pandas
@@ -23,6 +26,3 @@ prometheus-client
 boto3
 dvc[s3]          
 awscli         
-
-# Utils
-setuptools==69.5.1
