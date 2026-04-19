@@ -6,7 +6,6 @@ scikit-learn
 pandas
 numpy
 nltk
-xgboost
 
 # MLflow + DagsHub
 mlflow==2.15.0
