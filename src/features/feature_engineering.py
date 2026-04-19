@@ -43,6 +43,7 @@ def apply_tfidf(train_data: pd.DataFrame, test_data: pd.DataFrame, max_features:
     """Apply Count Vectorizer to the data."""
     try:
         logging.info("Applying Tf-Idf...")
+        logging.info(f"Building TF-IDF with max_features={max_features}")
         vectorizer = TfidfVectorizer(max_features=max_features)
 
         X_train = train_data['review'].values

@@ -59,13 +59,13 @@ def register_model(model_name: str, model_info: dict):
         
         # Transition the model to "Staging" stage
         client = mlflow.tracking.MlflowClient()
-        client.transition_model_version_stage(
+        client.set_registered_model_alias(
             name=model_name,
-            version=model_version.version,
-            stage="Staging"
+            alias="challenger",
+            version=model_version.version
         )
         
-        logging.debug(f'Model {model_name} version {model_version.version} registered and transitioned to Staging.')
+        logging.debug(f"Model version {model_version.version} registered with alias 'challenger' ✅")
     except Exception as e:
         logging.error('Error during model registration: %s', e)
         raise

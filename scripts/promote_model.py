@@ -16,23 +16,22 @@ def promote_model():
     client     = mlflow.MlflowClient()
     model_name = "my_model"
 
-    # Get latest version in Staging (still works even if deprecated)
-    staging = client.get_latest_versions(model_name, stages=["Staging"])
-    if not staging:
-        print("No model in Staging — nothing to promote")
+    # Get the challenger version
+    try:
+        challenger = client.get_model_version_by_alias(model_name, "challenger")
+    except Exception:
+        print("No model with alias 'challenger' found — nothing to promote")
         return
 
-    new_version = staging[0].version
+    new_version = challenger.version
 
-    # ✅ Set alias "production" on the new version
+    # Reassign champion alias to new version
     client.set_registered_model_alias(
         name=model_name,
-        alias="production",
+        alias="champion",
         version=new_version
     )
-
-    print(f"Model version {new_version} aliased as 'production' ✅")
-
+    print(f"Model version {new_version} promoted to 'champion' ✅")
 
 if __name__ == "__main__":
     promote_model()

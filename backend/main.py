@@ -63,19 +63,13 @@ PREDICTION_COUNT = Counter(
 
 def get_latest_model_version(model_name: str) -> str | None:
     client = mlflow.MlflowClient()
-
-    # ✅ Try alias first (new way)
     try:
-        version = client.get_model_version_by_alias(model_name, "production")
+        version = client.get_model_version_by_alias(model_name, "champion")
         return version.version
     except Exception:
-        pass
-
-    # Fallback to stage (old way — still works)
-    versions = client.get_latest_versions(model_name, stages=["Production"])
-    if not versions:
+        # Fallback for first deployment before champion alias exists
         versions = client.get_latest_versions(model_name, stages=["None"])
-    return versions[0].version if versions else None
+        return versions[0].version if versions else None
 
 
 # ── Lifespan — runs once on startup ──────────────────────────────────────────
@@ -100,8 +94,7 @@ async def lifespan(app: FastAPI):
         mlflow=True,
     )
 
-    model_version = get_latest_model_version(MODEL_NAME)
-    model_uri     = f"models:/{MODEL_NAME}/{model_version}"
+    model_uri     = f"models:/{MODEL_NAME}@champion"
     print(f"Loading model from: {model_uri}")
     model      = mlflow.pyfunc.load_model(model_uri)
     vectorizer = pickle.load(open("models/vectorizer.pkl", "rb"))
