@@ -35,10 +35,6 @@ jobs:
       - name: Install DVC with S3 support
         run: pip install "dvc[s3]" --force-reinstall
 
-      # ── 4c. Install uv ────────────────────────────────────────────────────
-      - name: Install uv
-        run: pip install uv
-
       # ── 5. Download NLTK data ──────────────────────────────────────────────
       - name: Download NLTK data
         run: |
