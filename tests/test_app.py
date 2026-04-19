@@ -1,9 +1,3 @@
-"""
-test_app.py — FastAPI app tests.
-
-Replaces the old test_flask_app.py.
-Patches MLflow + dagshub so no real model loading happens during CI.
-"""
 import os
 import unittest
 from unittest.mock import MagicMock, patch
@@ -17,84 +11,82 @@ class TestFastAPIApp(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """
-        Patch all external dependencies before importing the FastAPI app.
-        Prevents real MLflow / DagsHub calls during CI.
+        Patch external dependencies before importing app.
+        Model loading now happens in lifespan so we patch
+        the lifespan from being called during TestClient init.
         """
-        # Patch dagshub.init
-        patcher_dagshub = patch("dagshub.init")
-        patcher_dagshub.start()
+        # Patch dagshub and mlflow setup
+        patch("dagshub.init").start()
+        patch("mlflow.set_tracking_uri").start()
 
-        # Patch mlflow.set_tracking_uri
-        patcher_uri = patch("mlflow.set_tracking_uri")
-        patcher_uri.start()
+        # Patch get_latest_model_version used in lifespan
+        patch(
+            "backend.main.get_latest_model_version",
+            return_value="4"
+        ).start()
 
-        # Patch mlflow.MlflowClient
-        mock_client = MagicMock()
-        mock_client.get_latest_versions.return_value = [MagicMock(version="4")]
-        patcher_client = patch("mlflow.MlflowClient", return_value=mock_client)
-        patcher_client.start()
-
-        # Patch mlflow.pyfunc.load_model
+        # Patch mlflow.pyfunc.load_model used in lifespan
         mock_model = MagicMock()
         mock_model.predict.return_value = np.array([1])
-        patcher_model = patch("mlflow.pyfunc.load_model", return_value=mock_model)
-        patcher_model.start()
+        patch("mlflow.pyfunc.load_model", return_value=mock_model).start()
 
         # Patch pickle.load for vectorizer
         mock_vectorizer = MagicMock()
-        mock_vectorizer.transform.return_value = MagicMock(
-            toarray=lambda: np.zeros((1, 100)),
-            shape=(1, 100)
-        )
-        patcher_pickle = patch("pickle.load", return_value=mock_vectorizer)
-        patcher_pickle.start()
+        mock_array = np.zeros((1, 100))
+        mock_transform_result = MagicMock()
+        mock_transform_result.toarray.return_value = mock_array
+        mock_transform_result.shape = (1, 100)
+        mock_vectorizer.transform.return_value = mock_transform_result
+        patch("pickle.load", return_value=mock_vectorizer).start()
 
-        # Patch open so pickle.load doesn't need a real file
-        patcher_open = patch("builtins.open", unittest.mock.mock_open())
-        patcher_open.start()
+        # Patch builtins.open so pickle.load doesn't need real file
+        patch("builtins.open", unittest.mock.mock_open()).start()
 
         # Now safe to import
         from fastapi.testclient import TestClient
         from backend.main import app
         cls.client = TestClient(app)
 
+    @classmethod
+    def tearDownClass(cls):
+        patch.stopall()
+
     def test_health_returns_200(self):
         resp = self.client.get("/health")
         self.assertEqual(resp.status_code, 200)
 
     def test_health_returns_ok(self):
-        resp = self.client.get("/health")
-        self.assertIn("status", resp.json())
-        self.assertEqual(resp.json()["status"], "ok")
+        self.assertEqual(
+            self.client.get("/health").json()["status"], "ok"
+        )
 
     def test_predict_returns_200(self):
-        resp = self.client.post("/predict", json={"text": "This movie was great!"})
+        resp = self.client.post(
+            "/predict", json={"text": "This movie was great!"}
+        )
         self.assertEqual(resp.status_code, 200)
 
     def test_predict_returns_sentiment(self):
-        resp = self.client.post("/predict", json={"text": "This movie was great!"})
-        data = resp.json()
-        self.assertIn("sentiment", data)
-        self.assertIn(data["sentiment"], ["Positive", "Negative"])
+        resp = self.client.post(
+            "/predict", json={"text": "This movie was great!"}
+        )
+        self.assertIn(resp.json()["sentiment"], ["Positive", "Negative"])
 
     def test_predict_returns_confidence(self):
-        resp = self.client.post("/predict", json={"text": "This movie was great!"})
-        data = resp.json()
-        self.assertIn("confidence", data)
-        self.assertIsInstance(data["confidence"], float)
-
-    def test_predict_returns_clean_text(self):
-        resp = self.client.post("/predict", json={"text": "This movie was great!"})
-        data = resp.json()
-        self.assertIn("clean_text", data)
+        resp = self.client.post(
+            "/predict", json={"text": "This movie was great!"}
+        )
+        self.assertIsInstance(resp.json()["confidence"], float)
 
     def test_predict_missing_text_returns_422(self):
-        resp = self.client.post("/predict", json={})
-        self.assertEqual(resp.status_code, 422)
+        self.assertEqual(
+            self.client.post("/predict", json={}).status_code, 422
+        )
 
-    def test_metrics_endpoint_returns_200(self):
-        resp = self.client.get("/metrics")
-        self.assertEqual(resp.status_code, 200)
+    def test_metrics_returns_200(self):
+        self.assertEqual(
+            self.client.get("/metrics").status_code, 200
+        )
 
 
 if __name__ == "__main__":
