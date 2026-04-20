@@ -58,18 +58,31 @@ class TestModelLoading(unittest.TestCase):
 
     @staticmethod
     def load_vectorizer_for_version(model_name: str, model_version: str):
-        """Download the vectorizer artifact logged with this specific model version."""
+        """
+        Download the vectorizer artifact logged with this specific model version.
+        Falls back to local models/vectorizer.pkl for old versions that
+        were registered before vectorizer logging was added.
+        """
         client = mlflow.MlflowClient()
         mv     = client.get_model_version(model_name, model_version)
         run_id = mv.run_id
 
-        with tempfile.TemporaryDirectory() as tmp:
-            local_path = mlflow.artifacts.download_artifacts(
-                run_id=run_id,
-                artifact_path="vectorizer/vectorizer.pkl",
-                dst_path=tmp
-            )
-            with open(local_path, "rb") as f:
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                local_path = mlflow.artifacts.download_artifacts(
+                    run_id=run_id,
+                    artifact_path="vectorizer/vectorizer.pkl",
+                    dst_path=tmp
+                )
+                with open(local_path, "rb") as f:
+                    return pickle.load(f)
+        except Exception as e:
+            # Old model versions don't have vectorizer artifact logged
+            # Fall back to local vectorizer — only safe when challenger
+            # and champion were trained with same max_features
+            print(f"⚠️ Could not download vectorizer for version {model_version}: {e}")
+            print("⚠️ Falling back to local models/vectorizer.pkl")
+            with open("models/vectorizer.pkl", "rb") as f:
                 return pickle.load(f)
 
     @staticmethod
