@@ -35,7 +35,8 @@ jobs:
       - name: Install DVC with S3 support
         run: |
           pip install "dvc[s3]" --force-reinstall
-          pip install --upgrade setuptools wheel 
+          pip install --upgrade setuptools wheel
+          python -c "import pkg_resources; print('✅ pkg_resources OK after reinstall')"
 
       # ── 5. Download NLTK data ──────────────────────────────────────────────
       - name: Download NLTK data
@@ -53,9 +54,6 @@ jobs:
       # ── 7. Pull DVC artifacts + run pipeline ───────────────────────────────
       - name: Pull DVC artifacts from S3
         run: dvc pull
-
-      - name: Verify pkg_resources available
-        run: python -c "import pkg_resources; print('✅ pkg_resources OK')"
 
       - name: Run DVC pipeline
         env:
