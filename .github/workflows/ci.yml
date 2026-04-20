@@ -33,8 +33,9 @@ jobs:
 
       # ── 4b. Force reinstall DVC with S3 support ───────────────────────────
       - name: Install DVC with S3 support
-        run: pip install "dvc[s3]" --force-reinstall
-             pip install --upgrade setuptools wheel  
+        run: |
+          pip install "dvc[s3]" --force-reinstall
+          pip install --upgrade setuptools wheel 
 
       # ── 5. Download NLTK data ──────────────────────────────────────────────
       - name: Download NLTK data
