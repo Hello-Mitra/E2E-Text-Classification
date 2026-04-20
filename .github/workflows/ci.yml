@@ -35,8 +35,8 @@ jobs:
       - name: Install DVC with S3 support
         run: |
           pip install "dvc[s3]" --force-reinstall
-          pip install --upgrade setuptools wheel
-          python -c "import pkg_resources; print('✅ pkg_resources OK after reinstall')"
+          pip install setuptools==69.5.1 wheel --force-reinstall --ignore-installed
+          python -c "import pkg_resources; print('✅ pkg_resources OK')"
 
       # ── 5. Download NLTK data ──────────────────────────────────────────────
       - name: Download NLTK data
