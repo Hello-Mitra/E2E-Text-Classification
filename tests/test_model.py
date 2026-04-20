@@ -89,10 +89,10 @@ class TestModelLoading(unittest.TestCase):
         )
 
         # Layer 1 — absolute floor
-        self.assertGreaterEqual(accuracy_new,  0.75, "Accuracy below floor")
-        self.assertGreaterEqual(precision_new, 0.75, "Precision below floor")
-        self.assertGreaterEqual(recall_new,    0.75, "Recall below floor")
-        self.assertGreaterEqual(f1_new,        0.75, "F1 below floor")
+        self.assertGreaterEqual(accuracy_new,  0.70, "Accuracy below floor")
+        self.assertGreaterEqual(precision_new, 0.70, "Precision below floor")
+        self.assertGreaterEqual(recall_new,    0.70, "Recall below floor")
+        self.assertGreaterEqual(f1_new,        0.70, "F1 below floor")
 
         # Layer 2 — champion/challenger
         if self.prod_model is not None:

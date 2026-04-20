@@ -24,6 +24,9 @@ from prometheus_client import (
     generate_latest,
 )
 from pydantic import BaseModel
+from dotenv import load_dotenv
+
+load_dotenv()
 
 warnings.simplefilter("ignore", UserWarning)
 warnings.filterwarnings("ignore")
@@ -88,18 +91,31 @@ async def lifespan(app: FastAPI):
     mlflow.set_tracking_uri(
         "https://dagshub.com/Hello-Mitra/E2E-Text-Summarization.mlflow"
     )
-    dagshub.init(
+    dagshub.init(                              # ← only once
         repo_owner="Hello-Mitra",
         repo_name="E2E-Text-Summarization",
         mlflow=True,
     )
 
+    # ✅ Get version number from alias
+    model_version = get_latest_model_version(MODEL_NAME)
     model_uri     = f"models:/{MODEL_NAME}@champion"
+
     print(f"Loading model from: {model_uri}")
-    model      = mlflow.pyfunc.load_model(model_uri)
-    vectorizer = pickle.load(open("models/vectorizer.pkl", "rb"))
+    model = mlflow.pyfunc.load_model(model_uri)
+
+    with open("models/vectorizer.pkl", "rb") as f:    # ✅ proper file close
+        vectorizer = pickle.load(f)
+
     print(f"✅ Model '{MODEL_NAME}' version {model_version} loaded successfully")
     yield
+    # -------------------------------------------------------------------------------------
+
+    # Below code block is for local use
+    # -------------------------------------------------------------------------------------
+    # mlflow.set_tracking_uri('https://dagshub.com/Hello-Mitra/E2E-Text-Summarization.mlflow')
+    # dagshub.init(repo_owner='Hello-Mitra', repo_name='E2E-Text-Summarization', mlflow=True)
+    # -------------------------------------------------------------------------------------
 
 
 # ── Text preprocessing ────────────────────────────────────────────────────────
