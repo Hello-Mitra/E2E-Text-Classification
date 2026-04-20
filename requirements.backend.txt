@@ -1,5 +1,6 @@
 # Utils
 setuptools==69.5.1
+wheel
 
 # Core ML
 scikit-learn
